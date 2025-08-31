@@ -23,25 +23,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibVdXEeltJRUjeemlZteKGIv5CoZZXbw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNTlrdUmTzrDgektczlKNRRhy5X5AAOnx5S09ydFYWWNSfcEqDTTHgtNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="https://unpkg.com/html-to-docx@1.8.0/dist/html-to-docx.js"></script>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@^19.1.1",
-    "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
-    "react/": "https://esm.sh/react@^19.1.1/",
-    "@google/genai": "https://esm.sh/@google/genai",
-    "express": "https://aistudiocdn.com/express@^5.1.0",
-    "cors": "https://aistudiocdn.com/cors@^2.8.5",
-    "multer": "https://aistudiocdn.com/multer@^2.0.2",
-    "dotenv": "https://aistudiocdn.com/dotenv@^17.2.1",
-    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.17",
-    "mammoth": "https://aistudiocdn.com/mammoth@^1.10.0",
-    "util": "https://aistudiocdn.com/util@^0.12.5",
-    "pdf-parse": "https://aistudiocdn.com/pdf-parse@^1.1.1",
-    "textract": "https://aistudiocdn.com/textract@^2.5.0"
-  }
-}
-</script>
   <style>
     /* Custom scrollbar for a cleaner, dark-theme look */
     ::-webkit-scrollbar {
@@ -59,7 +40,27 @@
       background: #64748b; /* slate-500 */
     }
   </style>
-<link rel="stylesheet" href="/index.css">
+<script type="importmap">
+{
+  "imports": {
+    "@vercel/node": "https://aistudiocdn.com/@vercel/node@^5.3.17",
+    "express": "https://aistudiocdn.com/express@^5.1.0",
+    "multer": "https://aistudiocdn.com/multer@^2.0.2",
+    "cors": "https://aistudiocdn.com/cors@^2.8.5",
+    "dotenv": "https://aistudiocdn.com/dotenv@^17.2.1",
+    "pdf-parse": "https://aistudiocdn.com/pdf-parse@^1.1.1",
+    "mammoth": "https://aistudiocdn.com/mammoth@^1.10.0",
+    "textract": "https://aistudiocdn.com/textract@^2.5.0",
+    "util": "https://aistudiocdn.com/util@^0.12.5",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.16.0",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.2",
+    "vite": "https://aistudiocdn.com/vite@^7.1.3"
+  }
+}
+</script>
 </head>
   <body class="bg-slate-900 text-slate-300">
     <div id="root"></div>

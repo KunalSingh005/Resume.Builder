@@ -131,6 +131,7 @@ const App: React.FC = () => {
   const handleDownloadPdf = useCallback(() => {
     const resumeElement = resumePreviewRef.current;
     if (!resumeElement || downloadState.inProgress) return;
+
     setDownloadState({ inProgress: true, format: 'PDF' });
     const html2canvas = (window as any).html2canvas;
     const { jsPDF } = (window as any).jspdf;
@@ -141,7 +142,17 @@ const App: React.FC = () => {
         setDownloadState({ inProgress: false, format: null });
         return;
     }
-    html2canvas(resumeElement, { scale: 3, useCORS: true, logging: false, backgroundColor: null })
+    
+    // Clone the element to avoid modifying the displayed resume
+    const elementToExport = resumeElement.cloneNode(true) as HTMLElement;
+    // Remove all SVG elements from the clone as they can cause rendering issues with html2canvas
+    elementToExport.querySelectorAll('svg').forEach(svg => svg.remove());
+    // Temporarily append to body off-screen to ensure styles are computed correctly
+    elementToExport.style.position = 'absolute';
+    elementToExport.style.left = '-9999px';
+    document.body.appendChild(elementToExport);
+
+    html2canvas(elementToExport, { scale: 3, useCORS: true, logging: false, backgroundColor: null })
       .then((canvas: any) => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -149,34 +160,77 @@ const App: React.FC = () => {
         pdf.save(`${resumeData.name.replace(/\s+/g, '_')}_Resume.pdf`);
       }).catch((err: any) => {
         console.error("Failed to generate PDF:", err);
-        alert("An error occurred while generating the PDF.");
+        alert("An error occurred while creating the PDF. Please try again later.");
       }).finally(() => {
+        document.body.removeChild(elementToExport);
         setDownloadState({ inProgress: false, format: null });
       });
   }, [resumeData.name, downloadState.inProgress]);
 
   const handleDownloadDocx = useCallback(async () => {
-    const resumeElement = resumePreviewRef.current?.firstElementChild;
-    if (!resumeElement || downloadState.inProgress) return;
+    if (downloadState.inProgress) return;
     setDownloadState({ inProgress: true, format: 'DOCX' });
+
     try {
         const htmlToDocx = (window as any).htmlToDocx;
         if (!htmlToDocx) throw new Error("html-to-docx library not loaded.");
-        
-        // Clone the element to avoid modifying the displayed resume
-        const elementToExport = resumeElement.cloneNode(true) as HTMLElement;
 
-        // Remove all SVG elements from the clone, as they are often unsupported 
-        // by HTML-to-DOCX converters and can cause errors.
-        elementToExport.querySelectorAll('svg').forEach(svg => svg.remove());
+        // Generate a simplified, clean HTML string for better DOCX conversion, as the library
+        // struggles with complex CSS like flexbox and grid.
+        const generateSimpleHtml = (data: ResumeData): string => {
+            const escapeHtml = (unsafe: string) => unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+            let experiencesHtml = data.experiences.map(exp => `
+                <h3 style="font-size: 12pt; font-weight: bold; margin: 12px 0 2px 0;">${escapeHtml(exp.title)}</h3>
+                <p style="margin: 0; font-style: italic;">${escapeHtml(exp.company)} | ${escapeHtml(exp.location)} | ${escapeHtml(exp.startDate)} - ${escapeHtml(exp.endDate)}</p>
+                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                    ${exp.description.map(d => `<li style="margin-bottom: 2px;">${escapeHtml(d)}</li>`).join('')}
+                </ul>
+            `).join('');
+
+            let projectsHtml = data.projects.map(proj => `
+                <h3 style="font-size: 12pt; font-weight: bold; margin: 12px 0 2px 0;">${escapeHtml(proj.name)}</h3>
+                <p style="margin: 0;">${escapeHtml(proj.description)}</p>
+                <p style="margin: 0; font-size: 9pt;"><strong>Technologies:</strong> ${escapeHtml(proj.technologies.join(', '))}</p>
+            `).join('');
+
+            let educationsHtml = data.educations.map(edu => `
+                <h3 style="font-size: 12pt; font-weight: bold; margin: 12px 0 2px 0;">${escapeHtml(edu.institution)}</h3>
+                <p style="margin: 0;">${escapeHtml(edu.degree)} | ${escapeHtml(edu.startDate)} - ${escapeHtml(edu.endDate)}</p>
+            `).join('');
+
+            const content = `
+                <!DOCTYPE html><html><head><meta charset="UTF-8"></head>
+                <body>
+                    <div style="font-family: Arial, sans-serif; font-size: 10pt;">
+                        <h1 style="text-align: center; font-size: 22pt; font-weight: bold; margin: 0;">${escapeHtml(data.name)}</h1>
+                        <p style="text-align: center; font-size: 14pt; margin: 2px 0 8px 0;">${escapeHtml(data.jobTitle)}</p>
+                        <p style="text-align: center; font-size: 9pt; margin: 0;">
+                            ${escapeHtml(data.email)} | ${escapeHtml(data.phone)} | ${escapeHtml(data.location)}
+                        </p>
+                        <p style="text-align: center; font-size: 9pt; margin: 0;">
+                            LinkedIn: ${escapeHtml(data.linkedin)} | Portfolio: ${escapeHtml(data.portfolio)}
+                        </p>
+                        <h2 style="font-size: 14pt; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 20px 0 5px 0;">Summary</h2>
+                        <p style="margin: 0;">${escapeHtml(data.summary)}</p>
+                        <h2 style="font-size: 14pt; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 20px 0 5px 0;">Skills</h2>
+                        <p style="margin: 0;">${escapeHtml(data.skills.join(', '))}</p>
+                        <h2 style="font-size: 14pt; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 20px 0 5px 0;">Work Experience</h2>
+                        ${experiencesHtml}
+                        <h2 style="font-size: 14pt; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 20px 0 5px 0;">Projects</h2>
+                        ${projectsHtml}
+                        <h2 style="font-size: 14pt; border-bottom: 1px solid #000; padding-bottom: 2px; margin: 20px 0 5px 0;">Education</h2>
+                        ${educationsHtml}
+                    </div>
+                </body></html>
+            `;
+            return content;
+        };
+
+        const simpleHtmlContent = generateSimpleHtml(resumeData);
         
-        const blob = await htmlToDocx(elementToExport.outerHTML, {
-            margins: {
-                top: 720,
-                right: 720,
-                bottom: 720,
-                left: 720,
-            },
+        const blob = await htmlToDocx(simpleHtmlContent, {
+            margins: { top: 720, right: 720, bottom: 720, left: 720 },
         });
 
         const url = URL.createObjectURL(blob);
@@ -189,11 +243,11 @@ const App: React.FC = () => {
         URL.revokeObjectURL(url);
     } catch (err) {
         console.error("Failed to generate DOCX:", err);
-        alert("An error occurred while generating the DOCX file.");
+        alert("An error occurred while generating the DOCX file. Please try again later.");
     } finally {
         setDownloadState({ inProgress: false, format: null });
     }
-}, [resumeData.name, downloadState.inProgress]);
+}, [resumeData, downloadState.inProgress]);
 
   const onDownloadPdf = () => { setIsDropdownOpen(false); handleDownloadPdf(); };
   const onDownloadDocx = () => { setIsDropdownOpen(false); handleDownloadDocx(); };

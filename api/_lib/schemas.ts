@@ -1,5 +1,6 @@
 import { Type } from "@google/genai";
 
+// FIX: Removed non-standard 'nullable: true' property from schema properties.
 export const resumeSchema = {
     type: Type.OBJECT,
     properties: {
@@ -17,56 +18,53 @@ export const resumeSchema = {
             type: Type.OBJECT, 
             description: "The parsed resume content. Fields should be null if not found.",
             properties: {
-                name: { type: Type.STRING, nullable: true }, 
-                jobTitle: { type: Type.STRING, nullable: true }, 
-                email: { type: Type.STRING, nullable: true }, 
-                phone: { type: Type.STRING, nullable: true }, 
-                location: { type: Type.STRING, nullable: true }, 
-                linkedin: { type: Type.STRING, nullable: true }, 
-                portfolio: { type: Type.STRING, nullable: true }, 
-                summary: { type: Type.STRING, nullable: true },
-                skills: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true },
+                name: { type: Type.STRING }, 
+                jobTitle: { type: Type.STRING }, 
+                email: { type: Type.STRING }, 
+                phone: { type: Type.STRING }, 
+                location: { type: Type.STRING }, 
+                linkedin: { type: Type.STRING }, 
+                portfolio: { type: Type.STRING }, 
+                summary: { type: Type.STRING },
+                skills: { type: Type.ARRAY, items: { type: Type.STRING } },
                 experiences: { 
                     type: Type.ARRAY, 
                     items: { 
                         type: Type.OBJECT, 
                         properties: { 
-                            title: { type: Type.STRING, nullable: true }, 
-                            company: { type: Type.STRING, nullable: true }, 
-                            location: { type: Type.STRING, nullable: true }, 
-                            startDate: { type: Type.STRING, nullable: true }, 
-                            endDate: { type: Type.STRING, nullable: true }, 
-                            description: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true } 
+                            title: { type: Type.STRING }, 
+                            company: { type: Type.STRING }, 
+                            location: { type: Type.STRING }, 
+                            startDate: { type: Type.STRING }, 
+                            endDate: { type: Type.STRING }, 
+                            description: { type: Type.ARRAY, items: { type: Type.STRING } } 
                         } 
-                    },
-                    nullable: true 
+                    }
                 },
                 educations: { 
                     type: Type.ARRAY, 
                     items: { 
                         type: Type.OBJECT, 
                         properties: { 
-                            institution: { type: Type.STRING, nullable: true }, 
-                            degree: { type: Type.STRING, nullable: true }, 
-                            location: { type: Type.STRING, nullable: true }, 
-                            startDate: { type: Type.STRING, nullable: true }, 
-                            endDate: { type: Type.STRING, nullable: true } 
+                            institution: { type: Type.STRING }, 
+                            degree: { type: Type.STRING }, 
+                            location: { type: Type.STRING }, 
+                            startDate: { type: Type.STRING }, 
+                            endDate: { type: Type.STRING } 
                         } 
-                    },
-                    nullable: true 
+                    }
                 },
                 projects: { 
                     type: Type.ARRAY, 
                     items: { 
                         type: Type.OBJECT, 
                         properties: { 
-                            name: { type: Type.STRING, nullable: true }, 
-                            description: { type: Type.STRING, nullable: true }, 
-                            technologies: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true }, 
-                            link: { type: Type.STRING, nullable: true } 
+                            name: { type: Type.STRING }, 
+                            description: { type: Type.STRING }, 
+                            technologies: { type: Type.ARRAY, items: { type: Type.STRING } }, 
+                            link: { type: Type.STRING } 
                         } 
-                    },
-                    nullable: true
+                    }
                 }
             }
         }

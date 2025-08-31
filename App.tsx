@@ -18,12 +18,6 @@ const templates = [
   ExecutiveTemplate,
 ];
 
-interface AIAnalysisResult {
-  suggestions: string[];
-  missingInfo: string[];
-  parsedData: Partial<ResumeData>;
-}
-
 const generatePlainTextResume = (data: ResumeData): string => {
   let text = '';
   text += `${data.name.toUpperCase()}\n`;
@@ -71,10 +65,8 @@ const App: React.FC = () => {
     'Education': false,
   });
 
-  const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [aiAnalysis, setAiAnalysis] = useState<AIAnalysisResult | null>(null);
 
   const resumePreviewRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -198,119 +190,15 @@ const App: React.FC = () => {
   const SelectedTemplateComponent = templates[selectedTemplate];
 
   const handleFileSelect = (file: File) => {
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/png', 'image/jpeg', 'text/plain', 'application/rtf'];
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
     if (!allowedTypes.includes(file.type)) {
-        setAiError(`Unsupported file type: ${file.type}. Please upload a PDF, DOCX, image, or text file.`);
+        setAiError(`Please upload PDF or Word file only.`);
+        setResumeFile(null);
         return;
     }
     setAiError(null);
     setResumeFile(file);
 };
-
-const autofillForm = (parsedData: Partial<ResumeData> | undefined) => {
-    if (!parsedData) return;
-    
-    const updatedData = { ...DEFAULT_RESUME_DATA, ...Object.fromEntries(Object.entries(parsedData).filter(([_, v]) => v != null)) };
-
-    if (parsedData.experiences && parsedData.experiences.length > 0) {
-        updatedData.experiences = parsedData.experiences.map((exp: any, i: number) => ({ id: Date.now() + i, title: exp.title || '', company: exp.company || '', location: exp.location || '', startDate: exp.startDate || '', endDate: exp.endDate || '', description: exp.description || [''] }));
-    } else {
-        updatedData.experiences = [];
-    }
-    if (parsedData.educations && parsedData.educations.length > 0) {
-        updatedData.educations = parsedData.educations.map((edu: any, i: number) => ({ id: Date.now() + i, institution: edu.institution || '', degree: edu.degree || '', location: edu.location || '', startDate: edu.startDate || '', endDate: edu.endDate || '' }));
-    } else {
-        updatedData.educations = [];
-    }
-    if (parsedData.projects && parsedData.projects.length > 0) {
-        updatedData.projects = parsedData.projects.map((proj: any, i: number) => ({ id: Date.now() + i, name: proj.name || '', description: proj.description || '', technologies: proj.technologies || [], link: proj.link || '' }));
-    } else {
-        updatedData.projects = [];
-    }
-    if (parsedData.skills) {
-        updatedData.skills = parsedData.skills.filter(Boolean);
-    } else {
-        updatedData.skills = [];
-    }
-
-    setResumeData(updatedData);
-};
-
-  const handleAiAnalyze = async () => {
-    if (!resumeFile) return;
-    setAiLoading(true);
-    setAiError(null);
-    setAiAnalysis(null);
-    
-    const formData = new FormData();
-    formData.append('resume', resumeFile);
-
-    try {
-        const response = await fetch('/api/analyze-resume', {
-            method: 'POST',
-            body: formData,
-        });
-
-        const result = await response.json();
-
-        if (!response.ok || result.success === false) {
-            throw new Error(result.message || 'Analysis failed on the server.');
-        }
-
-        setAiAnalysis(result.data);
-    } catch (error: any) {
-        console.error("AI analysis failed:", error);
-        setAiError(error.message || "Failed to analyze the resume. The file may be unreadable, in an unsupported format, or the AI service is currently unavailable. Please try again.");
-    } finally {
-        setAiLoading(false);
-    }
-  };
-
-  const handleAiFill = async () => {
-    if (!resumeFile) return;
-    if (!window.confirm("This will automatically fill the form with information from your resume, replacing any existing content. Are you sure?")) {
-        return;
-    }
-    setAiLoading(true);
-    setAiError(null);
-    setAiAnalysis(null);
-
-    const formData = new FormData();
-    formData.append('resume', resumeFile);
-
-    try {
-        const response = await fetch('/api/fill-form', {
-            method: 'POST',
-            body: formData,
-        });
-        
-        const result = await response.json();
-
-        if (!response.ok || result.success === false) {
-            throw new Error(result.message || 'Auto-fill failed on the server.');
-        }
-
-        autofillForm(result.data.parsedData);
-        setAiAnalysis(result.data);
-        alert("Success! Your resume has been parsed and the form has been filled.");
-        setOpenSections(prev => ({ ...prev, 'AI Assistant': true, 'Personal Details': true }));
-    } catch (error: any) {
-        console.error("AI auto-fill failed:", error);
-        setAiError(error.message || "Failed to analyze and fill from the resume. Please check the file format or try again.");
-    } finally {
-        setAiLoading(false);
-    }
-  };
-
-  const handleApplyParsedData = () => {
-    if (!aiAnalysis?.parsedData) return;
-    if (!window.confirm("This will replace the current content in the editor with data parsed from your resume. Are you sure?")) {
-        return;
-    }
-    autofillForm(aiAnalysis.parsedData);
-    alert("Your information has been filled into the form!");
-    setOpenSections(prev => ({ ...prev, 'AI Assistant': false, 'Personal Details': true }));
-  };
 
   const EditorSection: React.FC<{title: string; icon: React.ReactNode; children: React.ReactNode}> = ({title, icon, children}) => (
       <div className="mb-4 bg-slate-800 rounded-xl shadow-lg transition-all duration-300 border border-slate-700">
@@ -361,74 +249,42 @@ const autofillForm = (parsedData: Partial<ResumeData> | undefined) => {
             <aside className="col-span-12 lg:col-span-5 xl:col-span-4 h-full">
                 <div className="lg:sticky lg:top-24"><div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 -mr-4">
                     <EditorSection title="AI Assistant" icon={<SparklesIcon className="w-6 h-6"/>}>
-                        {!aiAnalysis && !aiLoading && !aiError && (
-                          <>
-                            <div className="mb-3">
-                                <label className="text-sm font-medium text-slate-400 block mb-1.5">Upload your resume to get started</label>
-                                {!resumeFile ? (
-                                    <div
-                                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-cyan-400', 'bg-slate-700'); }}
-                                        onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-cyan-400', 'bg-slate-700'); }}
-                                        onDrop={(e) => {
-                                            e.preventDefault();
-                                            e.currentTarget.classList.remove('border-cyan-400', 'bg-slate-700');
-                                            if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                                                handleFileSelect(e.dataTransfer.files[0]);
-                                            }
-                                        }}
-                                        className="relative block w-full border-2 border-dashed border-slate-600 rounded-lg p-8 text-center cursor-pointer transition-colors"
-                                    >
-                                        <span className="text-slate-400">Drag & drop a file here, or click to select</span>
-                                        <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt,.rtf" />
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                                        <span className="text-slate-200 text-sm truncate">{resumeFile.name}</span>
-                                        <button onClick={() => setResumeFile(null)} className="text-slate-500 hover:text-red-400 p-1"><TrashIcon className="w-4 h-4"/></button>
-                                    </div>
-                                )}
-                            </div>
-                            {resumeFile && (
-                                <div className="flex flex-col sm:flex-row gap-3">
-                                    <button onClick={handleAiAnalyze} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-cyan-500 rounded-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-cyan-500 transition-all">
-                                        <SparklesIcon className="w-5 h-5" /> Analyze with AI
-                                    </button>
-                                     <button onClick={handleAiFill} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-500 rounded-lg hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-indigo-500 transition-all">
-                                        <SparklesIcon className="w-5 h-5" /> Fill Form
-                                    </button>
+                        <div className="mb-3">
+                            <label className="text-sm font-medium text-slate-400 block mb-1.5">Upload your resume</label>
+                            {!resumeFile ? (
+                                <div
+                                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-cyan-400', 'bg-slate-700'); }}
+                                    onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-cyan-400', 'bg-slate-700'); }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        e.currentTarget.classList.remove('border-cyan-400', 'bg-slate-700');
+                                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                            handleFileSelect(e.dataTransfer.files[0]);
+                                        }
+                                    }}
+                                    className="relative block w-full border-2 border-dashed border-slate-600 rounded-lg p-8 text-center cursor-pointer transition-colors"
+                                >
+                                    <span className="text-slate-400">Drag & drop a file here, or click to select</span>
+                                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} accept=".pdf,.doc,.docx" />
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
+                                    <span className="text-slate-200 text-sm truncate">{resumeFile.name}</span>
+                                    <button onClick={() => { setResumeFile(null); setAiError(null); }} className="text-slate-500 hover:text-red-400 p-1"><TrashIcon className="w-4 h-4"/></button>
                                 </div>
                             )}
-                          </>
-                        )}
-                        {aiLoading && <div className="text-center p-4">Analyzing your resume... This may take a moment.</div>}
+                        </div>
+                        
                         {aiError && (
-                            <div className="text-center p-4 text-red-400">
+                            <div className="text-center p-2 text-red-400 text-sm">
                                 <p>{aiError}</p>
-                                <button onClick={() => { setAiAnalysis(null); setResumeFile(null); setAiError(null); }} className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors mt-2">Try again</button>
                             </div>
                         )}
-                        {aiAnalysis && (
-                          <div className="space-y-4">
-                              <button onClick={handleApplyParsedData} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-cyan-500 rounded-lg hover:bg-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-cyan-500 transition-all">
-                                  <SparklesIcon className="w-5 h-5"/> Auto-fill Form with This Data
-                              </button>
-                              <div>
-                                  <h4 className="font-semibold text-slate-200 mb-2">Suggestions for Improvement</h4>
-                                  <ul className="list-disc list-inside space-y-1.5 text-sm text-slate-300 pl-2">
-                                      {aiAnalysis.suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                                  </ul>
-                              </div>
-                              {aiAnalysis.missingInfo.length > 0 && <div>
-                                  <h4 className="font-semibold text-slate-200 mb-2">Missing Information</h4>
-                                  <ul className="list-disc list-inside space-y-1.5 text-sm text-slate-300 pl-2">
-                                      {aiAnalysis.missingInfo.map((s, i) => <li key={i}>{s}</li>)}
-                                  </ul>
-                              </div>}
-                              <button onClick={() => { setAiAnalysis(null); setResumeFile(null); setAiError(null); }} className="w-full text-sm text-cyan-400 hover:text-cyan-300 transition-colors mt-2">
-                                  Start Over
-                              </button>
-                          </div>
-                        )}
+                        
+                        <div className="mt-4 text-center p-4 border border-slate-700 rounded-xl bg-slate-800">
+                          <p className="text-slate-400 italic">AI Assistant – Coming Soon 🚀</p>
+                        </div>
+
                     </EditorSection>
                     <EditorSection title="Personal Details" icon={<UserCircleIcon className="w-6 h-6"/>}>
                         <InputField label="Full Name" value={resumeData.name} onChange={e => handleInputChange('name', e.target.value)} />
@@ -544,6 +400,9 @@ const autofillForm = (parsedData: Partial<ResumeData> | undefined) => {
                 </div>
             </section>
         </main>
+        <footer className="text-center py-8">
+            <p className="text-sm text-slate-500">⚡ New features coming soon – stay tuned!</p>
+        </footer>
     </div>
   );
 };

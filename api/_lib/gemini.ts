@@ -4,9 +4,10 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const apiKey = process.env.GEMINI_API_KEY;
+// FIX: Per coding guidelines, API key must be from process.env.API_KEY
+const apiKey = process.env.API_KEY;
 if (!apiKey) {
-    throw new Error("GEMINI_API_KEY environment variable is not set.");
+    throw new Error("API_KEY environment variable is not set.");
 }
 
 const ai = new GoogleGenAI({ apiKey });
@@ -22,7 +23,7 @@ ${resumeText}
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: { parts: [{ text: prompt }] },
+            contents: prompt,
             config: { responseMimeType: "application/json", responseSchema: resumeSchema }
         });
 

@@ -7,7 +7,7 @@ import CreativeTemplate from './components/templates/Creative';
 import FunctionalTemplate from './components/templates/Functional';
 import ExecutiveTemplate from './components/templates/Executive';
 import {
-  ChevronDownIcon, PlusCircleIcon, TrashIcon, CopyIcon, DownloadIcon, UserCircleIcon, IdentificationIcon, CommandLineIcon, BriefcaseIcon, SparklesIcon, AcademicCapIcon
+  ChevronDownIcon, PlusCircleIcon, TrashIcon, CopyIcon, DownloadIcon, UserCircleIcon, IdentificationIcon, CommandLineIcon, BriefcaseIcon, SparklesIcon, AcademicCapIcon, RocketIcon
 } from './components/IconComponents';
 
 const templates = [
@@ -56,7 +56,6 @@ const App: React.FC = () => {
   const [downloadState, setDownloadState] = useState({ inProgress: false, format: null as 'PDF' | 'DOCX' | null });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    'AI Assistant': true,
     'Personal Details': true,
     'Summary': false,
     'Skills': false,
@@ -64,9 +63,6 @@ const App: React.FC = () => {
     'Projects': false,
     'Education': false,
   });
-
-  const [aiError, setAiError] = useState<string | null>(null);
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
 
   const resumePreviewRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -189,17 +185,6 @@ const App: React.FC = () => {
   const toggleSection = (title: string) => setOpenSections(prev => ({ ...prev, [title]: !prev[title] }));
   const SelectedTemplateComponent = templates[selectedTemplate];
 
-  const handleFileSelect = (file: File) => {
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
-    if (!allowedTypes.includes(file.type)) {
-        setAiError(`Please upload PDF or Word file only.`);
-        setResumeFile(null);
-        return;
-    }
-    setAiError(null);
-    setResumeFile(file);
-};
-
   const EditorSection: React.FC<{title: string; icon: React.ReactNode; children: React.ReactNode}> = ({title, icon, children}) => (
       <div className="mb-4 bg-slate-800 rounded-xl shadow-lg transition-all duration-300 border border-slate-700">
           <button onClick={() => toggleSection(title)} className="w-full flex justify-between items-center p-4 text-left" aria-expanded={openSections[title]} >
@@ -248,44 +233,15 @@ const App: React.FC = () => {
         <main className="grid grid-cols-12 gap-8 p-4 sm:p-6 lg:p-8">
             <aside className="col-span-12 lg:col-span-5 xl:col-span-4 h-full">
                 <div className="lg:sticky lg:top-24"><div className="max-h-[calc(100vh-8rem)] overflow-y-auto pr-4 -mr-4">
-                    <EditorSection title="AI Assistant" icon={<SparklesIcon className="w-6 h-6"/>}>
-                        <div className="mb-3">
-                            <label className="text-sm font-medium text-slate-400 block mb-1.5">Upload your resume</label>
-                            {!resumeFile ? (
-                                <div
-                                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add('border-cyan-400', 'bg-slate-700'); }}
-                                    onDragLeave={(e) => { e.preventDefault(); e.currentTarget.classList.remove('border-cyan-400', 'bg-slate-700'); }}
-                                    onDrop={(e) => {
-                                        e.preventDefault();
-                                        e.currentTarget.classList.remove('border-cyan-400', 'bg-slate-700');
-                                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-                                            handleFileSelect(e.dataTransfer.files[0]);
-                                        }
-                                    }}
-                                    className="relative block w-full border-2 border-dashed border-slate-600 rounded-lg p-8 text-center cursor-pointer transition-colors"
-                                >
-                                    <span className="text-slate-400">Drag & drop a file here, or click to select</span>
-                                    <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} accept=".pdf,.doc,.docx" />
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">
-                                    <span className="text-slate-200 text-sm truncate">{resumeFile.name}</span>
-                                    <button onClick={() => { setResumeFile(null); setAiError(null); }} className="text-slate-500 hover:text-red-400 p-1"><TrashIcon className="w-4 h-4"/></button>
-                                </div>
-                            )}
+                    <div className="mb-4 bg-slate-800 rounded-xl shadow-lg border border-slate-700 p-4">
+                        <div className="flex items-center gap-3">
+                            <RocketIcon className="w-6 h-6 text-cyan-400"/>
+                            <h3 className="text-lg font-semibold text-slate-100">AI Assistant</h3>
                         </div>
-                        
-                        {aiError && (
-                            <div className="text-center p-2 text-red-400 text-sm">
-                                <p>{aiError}</p>
-                            </div>
-                        )}
-                        
-                        <div className="mt-4 text-center p-4 border border-slate-700 rounded-xl bg-slate-800">
-                          <p className="text-slate-400 italic">AI Assistant – Coming Soon 🚀</p>
+                        <div className="mt-4 text-center p-4 border border-dashed border-slate-700 rounded-xl bg-slate-800/50">
+                            <p className="text-slate-400 italic">AI Assistant – Coming Soon 🚀</p>
                         </div>
-
-                    </EditorSection>
+                    </div>
                     <EditorSection title="Personal Details" icon={<UserCircleIcon className="w-6 h-6"/>}>
                         <InputField label="Full Name" value={resumeData.name} onChange={e => handleInputChange('name', e.target.value)} />
                         <InputField label="Job Title" value={resumeData.jobTitle} onChange={e => handleInputChange('jobTitle', e.target.value)} />

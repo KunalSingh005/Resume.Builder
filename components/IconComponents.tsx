@@ -97,3 +97,10 @@ export const SparklesIcon = ({ className }: { className?: string }) => (
 export const AcademicCapIcon = ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M11.723 3.323a1.5 1.5 0 012.554 0l2.67 4.225a1.5 1.5 0 01-.16 1.879l-4.162 4.978a1.5 1.5 0 01-2.252 0l-4.162-4.978a1.5 1.5 0 01-.16-1.879l2.67-4.225z" /><path d="M12 14.893l-4.286 5.122A3 3 0 0010.286 21h3.428a3 3 0 002.573-.985l-4.286-5.122z" /></svg>
 );
+
+export const RocketIcon = ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className={className}>
+        <path fillRule="evenodd" d="M15.592 2.79a18.023 18.023 0 015.424 5.424 1.5 1.5 0 01-2.43 1.802l-2.126-2.835a7.495 7.495 0 00-4.238-4.238L9.387.817a1.5 1.5 0 011.802-2.43c1.995.63 3.826 1.648 5.403 2.972zM2.972 15.592c-1.324 1.577-2.342 3.408-2.972 5.403a1.5 1.5 0 002.43 1.802l2.834-2.126a7.495 7.495 0 004.238-4.238l2.127-2.835a1.5 1.5 0 00-1.802-2.43c-1.995.63-3.826 1.648-5.403 2.972z" clipRule="evenodd" />
+        <path fillRule="evenodd" d="M12.75 10.5a2.25 2.25 0 10-4.5 0 2.25 2.25 0 004.5 0zM8.01 12.49a4.49 4.49 0 004.49 4.49 4.49 4.49 0 004.49-4.49A4.49 4.49 0 0012.5 8.01a4.49 4.49 0 00-4.49 4.48z" clipRule="evenodd" />
+    </svg>
+);

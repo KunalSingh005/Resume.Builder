@@ -163,7 +163,22 @@ const App: React.FC = () => {
         const htmlToDocx = (window as any).htmlToDocx;
         if (!htmlToDocx) throw new Error("html-to-docx library not loaded.");
         
-        const blob = await htmlToDocx(resumeElement.outerHTML);
+        // Clone the element to avoid modifying the displayed resume
+        const elementToExport = resumeElement.cloneNode(true) as HTMLElement;
+
+        // Remove all SVG elements from the clone, as they are often unsupported 
+        // by HTML-to-DOCX converters and can cause errors.
+        elementToExport.querySelectorAll('svg').forEach(svg => svg.remove());
+        
+        const blob = await htmlToDocx(elementToExport.outerHTML, {
+            margins: {
+                top: 720,
+                right: 720,
+                bottom: 720,
+                left: 720,
+            },
+        });
+
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

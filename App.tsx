@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { GoogleGenAI, Type } from "@google/genai";
 import { ResumeData, Experience, Education, Project } from './types';
 import { DEFAULT_RESUME_DATA, TEMPLATE_NAMES } from './constants';
 import ClassicTemplate from './components/templates/Classic';
@@ -199,66 +198,13 @@ const App: React.FC = () => {
   const SelectedTemplateComponent = templates[selectedTemplate];
 
   const handleFileSelect = (file: File) => {
-    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/png', 'image/jpeg', 'text/plain'];
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'image/png', 'image/jpeg', 'text/plain', 'application/rtf'];
     if (!allowedTypes.includes(file.type)) {
         setAiError(`Unsupported file type: ${file.type}. Please upload a PDF, DOCX, image, or text file.`);
         return;
     }
     setAiError(null);
     setResumeFile(file);
-};
-
-const fileToGenerativePart = async (file: File) => {
-    const base64EncodedData = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-    return {
-      inlineData: {
-        mimeType: file.type,
-        data: base64EncodedData
-      }
-    };
-};
-
-const runAiAnalysis = async (file: File): Promise<AIAnalysisResult> => {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
-    const schema = {
-        type: Type.OBJECT,
-        properties: {
-            suggestions: { type: Type.ARRAY, description: "Actionable suggestions to improve the resume. Focus on quantifiable achievements, action verbs, and clarity.", items: { type: Type.STRING } },
-            missingInfo: { type: Type.ARRAY, description: "Key information missing from the resume, such as a portfolio link, specific skills, or contact details.", items: { type: Type.STRING } },
-            parsedData: {
-                type: Type.OBJECT, description: "The parsed resume content.",
-                properties: {
-                    name: { type: Type.STRING }, jobTitle: { type: Type.STRING }, email: { type: Type.STRING }, phone: { type: Type.STRING }, location: { type: Type.STRING }, linkedin: { type: Type.STRING }, portfolio: { type: Type.STRING }, summary: { type: Type.STRING },
-                    skills: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    experiences: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, company: { type: Type.STRING }, location: { type: Type.STRING }, startDate: { type: Type.STRING }, endDate: { type: Type.STRING }, description: { type: Type.ARRAY, items: { type: Type.STRING } } } } },
-                    educations: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { institution: { type: Type.STRING }, degree: { type: Type.STRING }, location: { type: Type.STRING }, startDate: { type: Type.STRING }, endDate: { type: Type.STRING } } } },
-                    projects: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { name: { type: Type.STRING }, description: { type: Type.STRING }, technologies: { type: Type.ARRAY, items: { type: Type.STRING } }, link: { type: Type.STRING } } } }
-                }
-            }
-        }
-    };
-    const prompt = `Analyze the resume from the provided document. Extract the user's information into the 'parsedData' object. Provide actionable suggestions for improvement in the 'suggestions' array. Identify any key missing information in the 'missingInfo' array. Be as accurate as possible with the parsing. If the document is not a resume, state that in the suggestions.`;
-    const filePart = await fileToGenerativePart(file);
-    
-    const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: { parts: [filePart, { text: prompt }] },
-        config: { responseMimeType: "application/json", responseSchema: schema }
-    });
-
-    let jsonText = response.text.trim();
-    if (jsonText.startsWith('```json')) {
-      jsonText = jsonText.slice(7, -3).trim();
-    } else if (jsonText.startsWith('```')) {
-      jsonText = jsonText.slice(3, -3).trim();
-    }
-    
-    return JSON.parse(jsonText);
 };
 
 const autofillForm = (parsedData: Partial<ResumeData> | undefined) => {
@@ -290,18 +236,31 @@ const autofillForm = (parsedData: Partial<ResumeData> | undefined) => {
     setResumeData(updatedData);
 };
 
-
   const handleAiAnalyze = async () => {
     if (!resumeFile) return;
     setAiLoading(true);
     setAiError(null);
     setAiAnalysis(null);
+    
+    const formData = new FormData();
+    formData.append('resume', resumeFile);
+
     try {
-        const result = await runAiAnalysis(resumeFile);
-        setAiAnalysis(result);
-    } catch (error) {
+        const response = await fetch('/api/analyze-resume', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.success === false) {
+            throw new Error(result.message || 'Analysis failed on the server.');
+        }
+
+        setAiAnalysis(result.data);
+    } catch (error: any) {
         console.error("AI analysis failed:", error);
-        setAiError("Failed to analyze the resume. The file may be unreadable, in an unsupported format, or the AI service is currently unavailable. Please try again.");
+        setAiError(error.message || "Failed to analyze the resume. The file may be unreadable, in an unsupported format, or the AI service is currently unavailable. Please try again.");
     } finally {
         setAiLoading(false);
     }
@@ -315,15 +274,29 @@ const autofillForm = (parsedData: Partial<ResumeData> | undefined) => {
     setAiLoading(true);
     setAiError(null);
     setAiAnalysis(null);
+
+    const formData = new FormData();
+    formData.append('resume', resumeFile);
+
     try {
-        const result = await runAiAnalysis(resumeFile);
-        autofillForm(result.parsedData);
-        setAiAnalysis(result);
+        const response = await fetch('/api/fill-form', {
+            method: 'POST',
+            body: formData,
+        });
+        
+        const result = await response.json();
+
+        if (!response.ok || result.success === false) {
+            throw new Error(result.message || 'Auto-fill failed on the server.');
+        }
+
+        autofillForm(result.data.parsedData);
+        setAiAnalysis(result.data);
         alert("Success! Your resume has been parsed and the form has been filled.");
         setOpenSections(prev => ({ ...prev, 'AI Assistant': true, 'Personal Details': true }));
-    } catch (error) {
+    } catch (error: any) {
         console.error("AI auto-fill failed:", error);
-        setAiError("Failed to analyze and fill from the resume. Please check the file format or try again.");
+        setAiError(error.message || "Failed to analyze and fill from the resume. Please check the file format or try again.");
     } finally {
         setAiLoading(false);
     }
@@ -406,7 +379,7 @@ const autofillForm = (parsedData: Partial<ResumeData> | undefined) => {
                                         className="relative block w-full border-2 border-dashed border-slate-600 rounded-lg p-8 text-center cursor-pointer transition-colors"
                                     >
                                         <span className="text-slate-400">Drag & drop a file here, or click to select</span>
-                                        <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt" />
+                                        <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => e.target.files && handleFileSelect(e.target.files[0])} accept=".pdf,.doc,.docx,.png,.jpg,.jpeg,.txt,.rtf" />
                                     </div>
                                 ) : (
                                     <div className="flex items-center justify-between p-3 bg-slate-700 rounded-lg">

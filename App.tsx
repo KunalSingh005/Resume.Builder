@@ -49,6 +49,44 @@ const generatePlainTextResume = (data: ResumeData): string => {
   return text;
 };
 
+// Helper components moved outside the App component to prevent re-creation on re-renders, fixing the input focus bug.
+const EditorSection: React.FC<{title: string; icon: React.ReactNode; isOpen: boolean; onToggle: () => void; children: React.ReactNode}> = ({title, icon, isOpen, onToggle, children}) => (
+    <div className="mb-4 bg-slate-800 rounded-xl shadow-lg transition-all duration-300 border border-slate-700">
+        <button onClick={onToggle} className="w-full flex justify-between items-center p-4 text-left" aria-expanded={isOpen} >
+            <div className="flex items-center gap-3">
+                <span className="text-cyan-400">{icon}</span>
+                <h3 className="text-lg font-semibold text-slate-100">{title}</h3>
+            </div>
+            <ChevronDownIcon className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <div className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${isOpen ? 'max-h-[2000px]' : 'max-h-0'}`} >
+            <div className="p-4 pt-0">{children}</div>
+        </div>
+    </div>
+);
+
+const InputField: React.FC<{label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({label, value, onChange}) => (
+    <div className="mb-3">
+        <label className="text-sm font-medium text-slate-400 block mb-1.5">{label}</label>
+        <input type="text" value={value} onChange={onChange} className="w-full px-3 py-2 text-sm bg-slate-700/50 text-slate-200 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all" />
+    </div>
+);
+
+const TextAreaField: React.FC<{label: string; value: string; rows?: number; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void}> = ({label, value, rows=5, onChange}) => (
+  <div className="mb-3">
+      <label className="text-sm font-medium text-slate-400 block mb-1.5">{label}</label>
+      <textarea value={value} onChange={onChange} rows={rows} className="w-full px-3 py-2 text-sm bg-slate-700/50 text-slate-200 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all" />
+  </div>
+);
+
+const AddButton: React.FC<{onClick: () => void; children: React.ReactNode}> = ({onClick, children}) => (
+  <button onClick={onClick} className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-cyan-400 hover:text-white transition-colors py-2 border-2 border-dashed border-slate-600 hover:border-cyan-400 hover:bg-cyan-400/10 rounded-lg mt-2">
+      <PlusCircleIcon className="w-5 h-5"/>
+      {children}
+  </button>
+);
+
+
 const App: React.FC = () => {
   const [resumeData, setResumeData] = useState<ResumeData>(DEFAULT_RESUME_DATA);
   const [selectedTemplate, setSelectedTemplate] = useState(0);
@@ -185,42 +223,6 @@ const App: React.FC = () => {
   const toggleSection = (title: string) => setOpenSections(prev => ({ ...prev, [title]: !prev[title] }));
   const SelectedTemplateComponent = templates[selectedTemplate];
 
-  const EditorSection: React.FC<{title: string; icon: React.ReactNode; children: React.ReactNode}> = ({title, icon, children}) => (
-      <div className="mb-4 bg-slate-800 rounded-xl shadow-lg transition-all duration-300 border border-slate-700">
-          <button onClick={() => toggleSection(title)} className="w-full flex justify-between items-center p-4 text-left" aria-expanded={openSections[title]} >
-              <div className="flex items-center gap-3">
-                  <span className="text-cyan-400">{icon}</span>
-                  <h3 className="text-lg font-semibold text-slate-100">{title}</h3>
-              </div>
-              <ChevronDownIcon className={`w-5 h-5 text-slate-400 transition-transform duration-300 ${openSections[title] ? 'rotate-180' : ''}`} />
-          </button>
-          <div className={`overflow-hidden transition-[max-height] duration-500 ease-in-out ${openSections[title] ? 'max-h-[2000px]' : 'max-h-0'}`} >
-              <div className="p-4 pt-0">{children}</div>
-          </div>
-      </div>
-  );
-
-  const InputField: React.FC<{label: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void}> = ({label, value, onChange}) => (
-      <div className="mb-3">
-          <label className="text-sm font-medium text-slate-400 block mb-1.5">{label}</label>
-          <input type="text" value={value} onChange={onChange} className="w-full px-3 py-2 text-sm bg-slate-700/50 text-slate-200 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all" />
-      </div>
-  );
-  
-  const TextAreaField: React.FC<{label: string; value: string; rows?: number; onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void}> = ({label, value, rows=5, onChange}) => (
-    <div className="mb-3">
-        <label className="text-sm font-medium text-slate-400 block mb-1.5">{label}</label>
-        <textarea value={value} onChange={onChange} rows={rows} className="w-full px-3 py-2 text-sm bg-slate-700/50 text-slate-200 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all" />
-    </div>
-  );
-
-  const AddButton: React.FC<{onClick: () => void; children: React.ReactNode}> = ({onClick, children}) => (
-    <button onClick={onClick} className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-cyan-400 hover:text-white transition-colors py-2 border-2 border-dashed border-slate-600 hover:border-cyan-400 hover:bg-cyan-400/10 rounded-lg mt-2">
-        <PlusCircleIcon className="w-5 h-5"/>
-        {children}
-    </button>
-  );
-
   return (
     <div className="min-h-screen font-sans bg-slate-900">
         <header className="bg-slate-900/70 backdrop-blur-lg shadow-lg shadow-slate-950/20 sticky top-0 z-20 border-b border-slate-700">
@@ -242,7 +244,7 @@ const App: React.FC = () => {
                             <p className="text-slate-400 italic">AI Assistant – Coming Soon 🚀</p>
                         </div>
                     </div>
-                    <EditorSection title="Personal Details" icon={<UserCircleIcon className="w-6 h-6"/>}>
+                    <EditorSection title="Personal Details" icon={<UserCircleIcon className="w-6 h-6"/>} isOpen={openSections['Personal Details']} onToggle={() => toggleSection('Personal Details')}>
                         <InputField label="Full Name" value={resumeData.name} onChange={e => handleInputChange('name', e.target.value)} />
                         <InputField label="Job Title" value={resumeData.jobTitle} onChange={e => handleInputChange('jobTitle', e.target.value)} />
                         <InputField label="Email" value={resumeData.email} onChange={e => handleInputChange('email', e.target.value)} />
@@ -251,8 +253,8 @@ const App: React.FC = () => {
                         <InputField label="LinkedIn Profile URL" value={resumeData.linkedin} onChange={e => handleInputChange('linkedin', e.target.value)} />
                         <InputField label="Portfolio URL" value={resumeData.portfolio} onChange={e => handleInputChange('portfolio', e.target.value)} />
                     </EditorSection>
-                    <EditorSection title="Summary" icon={<IdentificationIcon className="w-6 h-6"/>}><TextAreaField label="Professional Summary" value={resumeData.summary} onChange={e => handleInputChange('summary', e.target.value)} /></EditorSection>
-                    <EditorSection title="Skills" icon={<CommandLineIcon className="w-6 h-6"/>}>
+                    <EditorSection title="Summary" icon={<IdentificationIcon className="w-6 h-6"/>} isOpen={openSections['Summary']} onToggle={() => toggleSection('Summary')}><TextAreaField label="Professional Summary" value={resumeData.summary} onChange={e => handleInputChange('summary', e.target.value)} /></EditorSection>
+                    <EditorSection title="Skills" icon={<CommandLineIcon className="w-6 h-6"/>} isOpen={openSections['Skills']} onToggle={() => toggleSection('Skills')}>
                         <div className="grid grid-cols-2 gap-2">
                           {resumeData.skills.map((skill, i) => ( <div key={i} className="relative group">
                             <input type="text" value={skill} onChange={e => handleNestedChange('skills', i, null, e.target.value)} className="w-full pr-8 pl-3 py-2 text-sm bg-slate-700/50 text-slate-200 border border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-all" />
@@ -261,7 +263,7 @@ const App: React.FC = () => {
                         </div>
                         <AddButton onClick={() => addNestedItem('skills')}>Add Skill</AddButton>
                     </EditorSection>
-                    <EditorSection title="Work Experience" icon={<BriefcaseIcon className="w-6 h-6"/>}>{resumeData.experiences.map((exp, i) => (
+                    <EditorSection title="Work Experience" icon={<BriefcaseIcon className="w-6 h-6"/>} isOpen={openSections['Work Experience']} onToggle={() => toggleSection('Work Experience')}>{resumeData.experiences.map((exp, i) => (
                       <div key={exp.id} className="border border-slate-700 p-4 rounded-lg mb-4 bg-slate-800/50 relative group">
                           <button onClick={() => removeNestedItem('experiences', i)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-5 h-5"/></button>
                           <InputField label="Job Title" value={exp.title} onChange={e => handleNestedChange('experiences', i, 'title', e.target.value)} />
@@ -273,7 +275,7 @@ const App: React.FC = () => {
                       </div>))}
                       <AddButton onClick={() => addNestedItem('experiences')}>Add Experience</AddButton>
                     </EditorSection>
-                    <EditorSection title="Projects" icon={<SparklesIcon className="w-6 h-6"/>}>{resumeData.projects.map((proj, i) => (
+                    <EditorSection title="Projects" icon={<SparklesIcon className="w-6 h-6"/>} isOpen={openSections['Projects']} onToggle={() => toggleSection('Projects')}>{resumeData.projects.map((proj, i) => (
                       <div key={proj.id} className="border border-slate-700 p-4 rounded-lg mb-4 bg-slate-800/50 relative group">
                         <button onClick={() => removeNestedItem('projects', i)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-5 h-5"/></button>
                         <InputField label="Project Name" value={proj.name} onChange={e => handleNestedChange('projects', i, 'name', e.target.value)} />
@@ -283,7 +285,7 @@ const App: React.FC = () => {
                       </div>))}
                       <AddButton onClick={() => addNestedItem('projects')}>Add Project</AddButton>
                     </EditorSection>
-                    <EditorSection title="Education" icon={<AcademicCapIcon className="w-6 h-6"/>}>{resumeData.educations.map((edu, i) => (
+                    <EditorSection title="Education" icon={<AcademicCapIcon className="w-6 h-6"/>} isOpen={openSections['Education']} onToggle={() => toggleSection('Education')}>{resumeData.educations.map((edu, i) => (
                       <div key={edu.id} className="border border-slate-700 p-4 rounded-lg mb-4 bg-slate-800/50 relative group">
                         <button onClick={() => removeNestedItem('educations', i)} className="absolute top-2 right-2 text-slate-500 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"><TrashIcon className="w-5 h-5"/></button>
                         <InputField label="Institution" value={edu.institution} onChange={e => handleNestedChange('educations', i, 'institution', e.target.value)} />
